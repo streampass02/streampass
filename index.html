@@ -759,26 +759,38 @@ function goTo(id) {
 var currentSlide = 1;
 var totalSlides = 4;
 
-function nextSlide() {
-  var cur = document.getElementById('ob' + currentSlide);
-  var dot = document.getElementById('dot' + currentSlide);
-  if (cur) cur.style.display = 'none';
-  if (dot) { dot.style.width = '8px'; dot.style.background = 'var(--gray-dark)'; dot.style.boxShadow = 'none'; }
-  currentSlide++;
-  if (currentSlide <= totalSlides) {
-    var next = document.getElementById('ob' + currentSlide);
-    var nextDot = document.getElementById('dot' + currentSlide);
-    if (next) { next.style.display = 'flex'; next.style.animation = 'fadeIn 0.4s ease'; }
-    if (nextDot) { nextDot.style.width = '24px'; nextDot.style.background = 'var(--purple)'; nextDot.style.boxShadow = '0 0 10px var(--purple-glow)'; }
-    var btn = document.getElementById('ob-btn');
-    if (btn) {
-      if (currentSlide === totalSlides) { btn.textContent = 'I Understand — Let\'s Go 🚀'; btn.onclick = function(){ goTo('setup'); }; }
-      else if (currentSlide > totalSlides) { goTo('setup'); }
+function showSlide(n) {
+  for (var i = 1; i <= totalSlides; i++) {
+    var slide = document.getElementById('ob' + i);
+    var dot = document.getElementById('dot' + i);
+    if (slide) slide.style.display = (i === n) ? 'flex' : 'none';
+    if (dot) {
+      dot.style.width = (i === n) ? '24px' : '8px';
+      dot.style.background = (i === n) ? 'var(--purple)' : 'var(--gray-dark)';
+      dot.style.boxShadow = (i === n) ? '0 0 10px var(--purple-glow)' : 'none';
     }
-  } else { goTo('setup'); }
+  }
+  var btn = document.getElementById('ob-btn');
+  if (btn) {
+    if (n === totalSlides) {
+      btn.textContent = "I Understand — Let's Go 🚀";
+    } else {
+      btn.textContent = 'Next';
+    }
+  }
 }
 
-// button uses inline onclick
+function nextSlide() {
+  if (currentSlide < totalSlides) {
+    currentSlide++;
+    showSlide(currentSlide);
+  } else {
+    goTo('setup');
+  }
+}
+
+// Init first slide on load
+showSlide(1);
 
 // ── Platform tiles ──
 function togglePlatform(el) {
