@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -870,4 +870,12 @@ function pickLang(el) {
   parent.querySelectorAll('.lang-option').forEach(function(o) {
     o.classList.remove('selected');
     var check = o.querySelectorAll('span');
-    if (check.length > 0
+    if (check.length > 0) check[check.length - 1].style.opacity = '0';
+  });
+  el.classList.add('selected');
+  var spans = el.querySelectorAll('span');
+  if (spans.length > 0) spans[spans.length - 1].style.opacity = '1';
+}
+</script>
+</body>
+</html>
