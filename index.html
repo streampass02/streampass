@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>StreamPass</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0D1B2A;
+  --navy-light: #1A2A3A;
+  --purple: #7C4DFF;
+  --purple-dark: #5C35CC;
+  --purple-glow: rgba(124,77,255,0.3);
+  --lavender: #B39DDB;
+  --white: #F0F4FF;
+  --gray: #B0BEC5;
+  --gray-dark: #546E7A;
+  --live-red: #FF3B5C;
+  --live-glow: rgba(255,59,92,0.35);
+  --success: #00E5A0;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:#040C14;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'DM Sans',sans-serif;}
+
+/* PHONE */
+.phone{width:390px;height:844px;background:var(--navy);border-radius:50px;overflow:hidden;position:relative;box-shadow:0 0 0 10px #151526,0 0 0 12px #0a0a1a,0 40px 100px rgba(0,0,0,0.9),0 0 140px rgba(124,77,255,0.12);}
+.phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#040C14;border-radius:0 0 20px 20px;z-index:200;}
+
+/* SCREENS */
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;scrollbar-width:none;}
+.screen::-webkit-scrollbar{display:none;}
+.screen.active{display:flex;}
+.spacer{height:90px;flex-shrink:0;}
+
+/* GLOBAL NAV */
+.global-nav{position:absolute;bottom:0;left:0;right:0;height:82px;background:rgba(10,18,28,0.97);backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.06);display:none;align-items:center;justify-content:space-around;padding:0 8px 18px;z-index:999;}
+.global-nav.visible{display:flex;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 14px;border-radius:14px;transition:all 0.2s;}
+.nav-item.active .nav-icon,.nav-item.active .nav-label{color:var(--purple);}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 6px var(--purple-glow));}
+.nav-icon{font-size:20px;color:var(--gray-dark);}
+.nav-label{font-size:10px;color:var(--gray-dark);font-weight:500;}
+
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+@keyframes blink{50%{opacity:0;}}
+@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+@keyframes liveGlow{0%,100%{box-shadow:0 0 8px var(--live-glow);}50%{box-shadow:0 0 20px var(--live-glow),0 0 40px rgba(255,59,92,0.15);}}
+@keyframes stampIn{0%{transform:scale(2) rotate(-15deg);opacity:0;}60%{transform:scale(0.9) rotate(3deg);opacity:1;}100%{transform:scale(1) rotate(0deg);opacity:1;}}
+
+/* SHARED */
+.btn-primary{width:100%;padding:18px;background:linear-gradient(135deg,var(--purple),var(--purple-dark));border:none;border-radius:16px;color:white;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 8px 24px rgba(124,77,255,0.4);}
+.btn-primary:active{transform:scale(0.97);}
+.btn-outline{width:100%;padding:14px;background:transparent;border:1.5px solid var(--gray-dark);border-radius:14px;color:var(--gray);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all 0.2s;}
+.section{margin-bottom:28px;}
+.section-header{display:flex;justify-content:space-between;align-items:center;padding:0 24px 14px;}
+.section-title{font-size:16px;font-weight:600;color:var(--white);}
+.see-all{font-size:12px;color:var(--purple);cursor:pointer;}
+.h-scroll{padding:0 24px;display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;}
+.h-scroll::-webkit-scrollbar{display:none;}
+.content-card{flex-shrink:0;width:120px;cursor:pointer;transition:transform 0.2s;}
+.content-card:active{transform:scale(0.95);}
+.card-poster{width:120px;height:168px;border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px;}
+.poster-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;}
+.plat-badge{position:absolute;bottom:6px;right:6px;background:rgba(13,27,42,0.88);border-radius:6px;padding:3px 6px;font-size:9px;font-weight:700;color:white;backdrop-filter:blur(4px);}
+.flag-badge{position:absolute;top:6px;left:6px;background:rgba(13,27,42,0.88);border-radius:6px;padding:3px 6px;font-size:10px;backdrop-filter:blur(4px);}
+.lang-badge{position:absolute;top:6px;right:6px;background:rgba(124,77,255,0.85);border-radius:6px;padding:3px 5px;font-size:8px;font-weight:700;color:white;}
+.card-title{font-size:12px;color:var(--white);font-weight:500;line-height:1.3;}
+.card-meta{font-size:10px;color:var(--gray-dark);margin-top:2px;}
+
+/* SETTINGS SHARED */
+.settings-section{margin:0 24px 24px;}
+.settings-section-title{font-size:12px;color:var(--gray-dark);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;}
+.settings-card{background:var(--navy-light);border-radius:16px;overflow:hidden;}
+.settings-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;}
+.settings-row:last-child{border-bottom:none;}
+.row-icon{font-size:18px;width:24px;text-align:center;}
+.row-info{flex:1;}
+.row-label{font-size:14px;color:var(--white);}
+.row-sub{font-size:11px;color:var(--gray-dark);margin-top:2px;}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--gray-dark);position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
+.toggle.on{background:var(--purple);box-shadow:0 0 10px var(--purple-glow);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:white;transition:transform 0.2s;box-shadow:0 2px 4px rgba(0,0,0,0.3);}
+.toggle.on::after{transform:translateX(20px);}
+.chevron{font-size:12px;color:var(--gray-dark);}
+
+/* MODAL */
+.modal-overlay{position:absolute;inset:0;background:rgba(6,14,23,0.85);backdrop-filter:blur(8px);z-index:500;display:none;align-items:flex-end;}
+.modal-overlay.open{display:flex;}
+.modal-sheet{background:#111E2D;border-radius:28px 28px 0 0;padding:24px 24px 40px;width:100%;animation:fadeUp 0.3s ease;}
+.modal-handle{width:40px;height:4px;background:var(--gray-dark);border-radius:2px;margin:0 auto 20px;}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--gray);margin-bottom:20px;}
+
+/* VPN */
+.vpn-hero{margin:0 0 16px;background:linear-gradient(135deg,rgba(124,77,255,0.15),rgba(92,53,204,0.1));border:1px solid rgba(124,77,255,0.3);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;}
+.vpn-status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px rgba(0,229,160,0.5);flex-shrink:0;}
+.vpn-status-dot.off{background:var(--gray-dark);box-shadow:none;}
+.vpn-card{background:var(--navy-light);border-radius:16px;padding:16px;margin-bottom:10px;border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;}
+.vpn-card.selected{border-color:var(--purple);box-shadow:0 0 20px var(--purple-glow);background:rgba(124,77,255,0.08);}
+.vpn-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.vpn-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.vpn-badge.rec{background:rgba(0,229,160,0.15);color:var(--success);border:1px solid rgba(0,229,160,0.3);}
+.vpn-badge.free{background:rgba(124,77,255,0.15);color:var(--lavender);border:1px solid rgba(124,77,255,0.3);}
+.vpn-desc{font-size:12px;color:var(--gray);line-height:1.5;margin-bottom:10px;}
+.vpn-features{display:flex;flex-wrap:wrap;gap:6px;}
+.vpn-feat{font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:6px;padding:3px 8px;}
+.vpn-providers{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.vpn-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--navy);border:1px solid rgba(255,255,255,0.06);font-size:11px;color:var(--gray);cursor:pointer;transition:all 0.2s;}
+.vpn-pill.active{background:rgba(124,77,255,0.15);border-color:var(--purple);color:var(--lavender);}
+.vpn-dot{width:6px;height:6px;border-radius:50%;}
+.plan-card{background:var(--navy);border-radius:14px;padding:14px;margin-bottom:10px;border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:12px;}
+.plan-card.selected{border-color:var(--purple);background:rgba(124,77,255,0.08);}
+.plan-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--gray-dark);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.plan-card.selected .plan-radio{border-color:var(--purple);background:var(--purple);}
+.plan-card.selected .plan-radio::after{content:'';width:6px;height:6px;border-radius:50%;background:white;}
+.plan-price{font-size:14px;font-weight:700;color:var(--purple);}
+.plan-period{font-size:10px;color:var(--gray-dark);}
+
+/* LIVE */
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--live-red);animation:livePulse 1.5s ease-in-out infinite;box-shadow:0 0 8px var(--live-glow);}
+.live-card{flex-shrink:0;width:200px;border-radius:16px;overflow:hidden;cursor:pointer;position:relative;transition:transform 0.2s;animation:liveGlow 2.5s ease-in-out infinite;border:1px solid rgba(255,59,92,0.25);}
+.live-card:active{transform:scale(0.96);}
+.live-bg{width:100%;height:120px;display:flex;align-items:center;justify-content:center;font-size:36px;position:relative;}
+.live-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,27,42,0.2) 0%,rgba(13,27,42,0.85) 100%);}
+.live-badge{position:absolute;top:10px;left:10px;background:var(--live-red);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:white;display:flex;align-items:center;gap:4px;z-index:2;}
+.live-badge-dot{width:6px;height:6px;border-radius:50%;background:white;animation:livePulse 1s ease-in-out infinite;}
+.live-flag{position:absolute;top:10px;right:10px;font-size:16px;z-index:2;}
+.live-viewers{position:absolute;bottom:36px;right:10px;font-size:9px;color:rgba(255,255,255,0.7);z-index:2;}
+.live-info{background:var(--navy-light);padding:10px 12px;}
+.live-channel{font-size:12px;font-weight:600;color:var(--white);}
+.live-desc{font-size:10px;color:var(--gray-dark);margin-top:2px;}
+.live-lang{display:inline-block;margin-top:4px;background:rgba(124,77,255,0.2);border:1px solid rgba(124,77,255,0.4);border-radius:4px;padding:2px 6px;font-size:9px;color:var(--lavender);}
+
+/* LANG */
+.lang-tab{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;background:var(--navy-light);color:var(--gray);border:1.5px solid transparent;}
+.lang-tab.active{background:rgba(124,77,255,0.15);color:var(--purple);border-color:var(--purple);box-shadow:0 0 12px var(--purple-glow);}
+.lang-option{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--navy-light);border-radius:12px;cursor:pointer;border:1.5px solid transparent;transition:all 0.2s;margin-bottom:8px;}
+.lang-option.selected{border-color:var(--purple);background:rgba(124,77,255,0.1);}
+.lang-pref-chip{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;transition:all 0.2s;background:var(--navy);color:var(--gray);border:1px solid transparent;}
+.lang-pref-chip.active{background:rgba(124,77,255,0.2);color:var(--purple);border-color:var(--purple);}
+
+/* PASSPORT */
+.passport-card{margin:0 24px 24px;background:linear-gradient(135deg,#1A2A3A,#0f1f2f);border-radius:24px;padding:24px;border:1px solid rgba(124,77,255,0.3);box-shadow:0 0 40px rgba(124,77,255,0.15),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden;}
+.passport-card::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;border:1px solid rgba(124,77,255,0.15);box-shadow:0 0 0 30px rgba(124,77,255,0.04);}
+.stat-num{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--purple);}
+.badge-card{background:var(--navy-light);border-radius:16px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.badge-card.earned{border:1px solid rgba(124,77,255,0.4);box-shadow:0 0 16px rgba(124,77,255,0.15);animation:stampIn 0.6s ease;}
+.badge-card.locked{opacity:0.4;}
+
+@media(max-width:430px){.phone{width:100vw;height:100dvh;border-radius:0;}body{align-items:flex-start;}}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- ════ ONBOARDING ════ -->
+<div class="screen active" id="onboarding" style="background:var(--navy);justify-content:space-between;padding:80px 32px 48px;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 28%,rgba(124,77,255,0.18) 0%,transparent 68%);pointer-events:none;"></div>
+
+  <!-- Slide 1 -->
+  <div id="ob1" style="display:flex;flex-direction:column;align-items:center;text-align:center;animation:fadeIn 0.4s ease;">
+    <div style="width:180px;height:180px;margin-bottom:32px;animation:float 4s ease-in-out infinite;">
+      <svg viewBox="0 0 200 200" fill="none" style="width:100%;height:100%">
+        <circle cx="100" cy="100" r="80" stroke="#7C4DFF" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.3"/>
+        <circle cx="100" cy="100" r="60" fill="rgba(124,77,255,0.08)" stroke="#7C4DFF" stroke-width="1"/>
+        <ellipse cx="100" cy="100" rx="60" ry="22" stroke="#B39DDB" stroke-width="1" opacity="0.4"/>
+        <line x1="100" y1="40" x2="100" y2="160" stroke="#B39DDB" stroke-width="1" opacity="0.4"/>
+        <circle cx="100" cy="100" r="60" fill="none" stroke="#7C4DFF" stroke-width="2"/>
+        <path d="M70 82 Q80 77 90 80 Q95 84 88 90 Q80 92 72 88 Z" fill="#7C4DFF" opacity="0.7"/>
+        <path d="M105 77 Q115 74 122 78 Q128 84 124 90 Q116 94 108 90 Q103 84 105 77 Z" fill="#7C4DFF" opacity="0.7"/>
+        <path d="M75 102 Q85 99 92 104 Q96 110 90 116 Q82 118 76 112 Z" fill="#B39DDB" opacity="0.7"/>
+        <g transform="translate(30,55)"><circle cx="0" cy="0" r="12" fill="rgba(124,77,255,0.85)"/><polygon points="-4,-6 8,0 -4,6" fill="white"/></g>
+        <g transform="translate(165,80)"><circle cx="0" cy="0" r="10" fill="rgba(179,157,219,0.85)"/><polygon points="-3,-5 7,0 -3,5" fill="white"/></g>
+        <g transform="translate(50,158)"><circle cx="0" cy="0" r="9" fill="rgba(124,77,255,0.7)"/><polygon points="-3,-4 6,0 -3,4" fill="white"/></g>
+        <g transform="translate(158,148)"><circle cx="0" cy="0" r="11" fill="rgba(179,157,219,0.75)"/><polygon points="-3,-5 7,0 -3,5" fill="white"/></g>
+      </svg>
+    </div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--white);line-height:1.2;margin-bottom:16px;">Your World of<br>Streaming, Unlocked</h1>
+    <p style="font-size:15px;color:var(--gray);line-height:1.6;max-width:280px;">Discover shows, movies and live TV from streaming platforms around the world</p>
+  </div>
+
+  <!-- Slide 2 -->
+  <div id="ob2" style="display:none;flex-direction:column;align-items:center;text-align:center;">
+    <div style="width:180px;height:180px;margin-bottom:32px;animation:float 4s ease-in-out infinite;">
+      <svg viewBox="0 0 200 200" fill="none" style="width:100%;height:100%">
+        <rect x="20" y="65" width="160" height="46" rx="23" fill="rgba(26,42,58,1)" stroke="#7C4DFF" stroke-width="1.5"/>
+        <text x="45" y="93" text-anchor="middle" fill="#7C4DFF" font-size="14">🔍</text>
+        <text x="112" y="93" text-anchor="middle" fill="#546E7A" font-size="11" font-family="sans-serif">Search any title...</text>
+        <rect x="25" y="130" width="30" height="30" rx="8" fill="#E50914"/>
+        <text x="40" y="150" text-anchor="middle" fill="white" font-size="11" font-weight="bold">N</text>
+        <rect x="63" y="130" width="30" height="30" rx="8" fill="#1CE783"/>
+        <text x="78" y="148" text-anchor="middle" fill="black" font-size="8" font-weight="bold">hulu</text>
+        <rect x="101" y="130" width="30" height="30" rx="8" fill="#000"/>
+        <text x="116" y="150" text-anchor="middle" fill="white" font-size="14">📺</text>
+        <rect x="139" y="130" width="30" height="30" rx="8" fill="#00A8E0"/>
+        <text x="154" y="150" text-anchor="middle" fill="white" font-size="11" font-weight="bold">P</text>
+        <line x1="100" y1="111" x2="40" y2="130" stroke="#7C4DFF" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+        <line x1="100" y1="111" x2="78" y2="130" stroke="#7C4DFF" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+        <line x1="100" y1="111" x2="116" y2="130" stroke="#7C4DFF" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+        <line x1="100" y1="111" x2="154" y2="130" stroke="#7C4DFF" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+      </svg>
+    </div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--white);line-height:1.2;margin-bottom:16px;">Find Anything,<br>Anywhere</h1>
+    <p style="font-size:15px;color:var(--gray);line-height:1.6;max-width:280px;">Search any show or movie and instantly see every platform it's available on, across every region</p>
+  </div>
+
+  <!-- Slide 3 -->
+  <div id="ob3" style="display:none;flex-direction:column;align-items:center;text-align:center;">
+    <div style="width:180px;height:180px;margin-bottom:32px;animation:float 4s ease-in-out infinite;">
+      <svg viewBox="0 0 200 200" fill="none" style="width:100%;height:100%">
+        <rect x="30" y="40" width="140" height="120" rx="12" fill="#1A2A3A" stroke="#7C4DFF" stroke-width="1.5"/>
+        <rect x="30" y="40" width="10" height="120" rx="5" fill="rgba(124,77,255,0.5)"/>
+        <rect x="50" y="58" width="36" height="28" rx="6" fill="rgba(124,77,255,0.2)" stroke="#7C4DFF" stroke-width="1"/>
+        <text x="68" y="77" text-anchor="middle" font-size="14">🇬🇧</text>
+        <rect x="94" y="58" width="36" height="28" rx="6" fill="rgba(179,157,219,0.2)" stroke="#B39DDB" stroke-width="1"/>
+        <text x="112" y="77" text-anchor="middle" font-size="14">🇯🇵</text>
+        <rect x="50" y="94" width="36" height="28" rx="6" fill="rgba(0,229,160,0.15)" stroke="#00E5A0" stroke-width="1"/>
+        <text x="68" y="113" text-anchor="middle" font-size="14">🇰🇷</text>
+        <rect x="94" y="94" width="36" height="28" rx="6" fill="rgba(124,77,255,0.2)" stroke="#7C4DFF" stroke-width="1"/>
+        <text x="112" y="113" text-anchor="middle" font-size="14">🇫🇷</text>
+        <text x="110" y="143" text-anchor="middle" fill="#B39DDB" font-size="9" font-family="sans-serif" letter-spacing="2">STREAMPASS</text>
+      </svg>
+    </div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--white);line-height:1.2;margin-bottom:16px;">Earn Your<br>Stamps</h1>
+    <p style="font-size:15px;color:var(--gray);line-height:1.6;max-width:280px;">Explore international content and collect badges for every country you travel to</p>
+  </div>
+
+  <!-- Slide 4 — Disclaimer -->
+  <div id="ob4" style="display:none;flex-direction:column;align-items:center;text-align:center;">
+    <div style="width:180px;height:180px;margin-bottom:28px;">
+      <svg viewBox="0 0 200 200" fill="none" style="width:100%;height:100%">
+        <circle cx="100" cy="100" r="70" fill="rgba(124,77,255,0.08)" stroke="#7C4DFF" stroke-width="1.5"/>
+        <rect x="65" y="55" width="70" height="90" rx="10" fill="#1A2A3A" stroke="#7C4DFF" stroke-width="1.5"/>
+        <line x1="78" y1="78" x2="122" y2="78" stroke="#B39DDB" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="78" y1="90" x2="122" y2="90" stroke="#B39DDB" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="78" y1="102" x2="105" y2="102" stroke="#B39DDB" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="100" cy="128" r="10" fill="rgba(124,77,255,0.3)" stroke="#7C4DFF" stroke-width="1.5"/>
+        <text x="100" y="133" text-anchor="middle" fill="#7C4DFF" font-size="13" font-weight="bold">i</text>
+      </svg>
+    </div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--white);line-height:1.2;margin-bottom:16px;">A Note on<br>Responsible Use</h1>
+    <div style="font-size:13px;color:var(--gray);text-align:left;background:rgba(124,77,255,0.08);border:1px solid rgba(124,77,255,0.2);border-radius:14px;padding:16px;line-height:1.8;max-width:300px;">
+      StreamPass helps you <strong style="color:var(--white)">discover content</strong> and access what you are <strong style="color:var(--white)">legally entitled to</strong> as a traveler or expat.<br><br>
+      Users are responsible for complying with their streaming platform's Terms of Service.<br><br>
+      <span style="color:var(--lavender);">StreamPass is a discovery tool — not a circumvention tool.</span>
+    </div>
+  </div>
+
+  <!-- Dots + Button -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+    <div style="display:flex;gap:8px;">
+      <div id="dot1" style="width:24px;height:8px;border-radius:4px;background:var(--purple);box-shadow:0 0 10px var(--purple-glow);transition:all 0.3s;"></div>
+      <div id="dot2" style="width:8px;height:8px;border-radius:4px;background:var(--gray-dark);transition:all 0.3s;"></div>
+      <div id="dot3" style="width:8px;height:8px;border-radius:4px;background:var(--gray-dark);transition:all 0.3s;"></div>
+      <div id="dot4" style="width:8px;height:8px;border-radius:4px;background:var(--gray-dark);transition:all 0.3s;"></div>
+    </div>
+    <button class="btn-primary" id="ob-btn">Next</button>
+  </div>
+</div>
+
+<!-- ════ SETUP ════ -->
+<div class="screen" id="setup" style="background:var(--navy);padding:80px 24px 32px;">
+  <h2 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--white);margin-bottom:8px;">What do you<br>subscribe to?</h2>
+  <p style="font-size:14px;color:var(--gray);line-height:1.5;margin-bottom:32px;">We'll show you content available on your platforms first</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;">
+    <div class="ptile" onclick="togglePlatform(this)" style="background:var(--navy-light);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;position:relative;">
+      <div style="width:44px;height:44px;border-radius:10px;background:#E50914;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;">N</div>
+      <div style="font-size:11px;color:var(--gray);">Netflix</div>
+    </div>
+    <div class="ptile sel" onclick="togglePlatform(this)" style="background:rgba(124,77,255,0.1);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:2px solid var(--purple);transition:all 0.2s;position:relative;box-shadow:0 0 20px var(--purple-glow);">
+      <div style="width:44px;height:44px;border-radius:10px;background:#1CE783;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#000;">hulu</div>
+      <div style="font-size:11px;color:var(--gray);">Hulu</div>
+    </div>
+    <div class="ptile" onclick="togglePlatform(this)" style="background:var(--navy-light);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;position:relative;">
+      <div style="width:44px;height:44px;border-radius:10px;background:#000;display:flex;align-items:center;justify-content:center;font-size:20px;">📺</div>
+      <div style="font-size:11px;color:var(--gray);">Apple TV+</div>
+    </div>
+    <div class="ptile sel" onclick="togglePlatform(this)" style="background:rgba(124,77,255,0.1);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:2px solid var(--purple);transition:all 0.2s;position:relative;box-shadow:0 0 20px var(--purple-glow);">
+      <div style="width:44px;height:44px;border-radius:10px;background:#00A8E0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;">P</div>
+      <div style="font-size:11px;color:var(--gray);">Prime Video</div>
+    </div>
+    <div class="ptile" onclick="togglePlatform(this)" style="background:var(--navy-light);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;position:relative;">
+      <div style="width:44px;height:44px;border-radius:10px;background:#113CCF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;">D+</div>
+      <div style="font-size:11px;color:var(--gray);">Disney+</div>
+    </div>
+    <div class="ptile" onclick="togglePlatform(this)" style="background:var(--navy-light);border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;position:relative;">
+      <div style="width:44px;height:44px;border-radius:10px;background:#002BE7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;">MAX</div>
+      <div style="font-size:11px;color:var(--gray);">HBO Max</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--gray-dark);font-size:13px;cursor:pointer;margin-bottom:16px;" onclick="goTo('home')">Skip for now</p>
+  <button class="btn-primary" onclick="goTo('home')">Let's Go 🚀</button>
+</div>
+
+<!-- ════ HOME ════ -->
+<div class="screen" id="home" style="background:var(--navy);padding-top:60px;">
+  <div style="padding:24px 24px 16px;display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:4px;">Good Evening 👋</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--white);">Stream<span style="color:var(--purple);">Pass</span></div>
+    </div>
+    <div onclick="goTo('passport')" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--purple),#B39DDB);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:0 0 16px var(--purple-glow);">✈️</div>
+  </div>
+
+  <div style="padding:0 24px 24px;" onclick="goTo('search-screen')">
+    <div style="background:var(--navy-light);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;border:1.5px solid transparent;">
+      <span style="font-size:16px;">🔍</span>
+      <span style="font-size:14px;color:var(--gray-dark);">Search any show or movie...</span>
+    </div>
+  </div>
+
+  <!-- LIVE SECTION -->
+  <div style="margin-bottom:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 24px 14px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="live-dot"></div>
+        <div class="section-title">Live Around the World</div>
+      </div>
+      <div class="see-all">See all</div>
+    </div>
+    <div class="h-scroll">
+      <div class="live-card" onclick="openLiveModal('🗾','NHK World','Japan — News &amp; Culture','🇯🇵','Japanese','1.2k')">
+        <div class="live-bg" style="background:linear-gradient(135deg,#1a1a3a,#2a1a3a);">🗾</div>
+        <div class="live-overlay"></div>
+        <div class="live-badge"><div class="live-badge-dot"></div>LIVE</div>
+        <div class="live-flag">🇯🇵</div>
+        <div class="live-viewers">👁 1.2k watching</div>
+        <div class="live-info"><div class="live-channel">NHK World</div><div class="live-desc">Japan — News &amp; Culture</div><div class="live-lang">🔤 JPN · SUB Available</div></div>
+      </div>
+      <div class="live-card" onclick="openLiveModal('🏟️','BBC One','UK — Premier League Live','🇬🇧','English','8.4k')">
+        <div class="live-bg" style="background:linear-gradient(135deg,#1a2a3a,#0d1a2a);">🏟️</div>
+        <div class="live-overlay"></div>
+        <div class="live-badge"><div class="live-badge-dot"></div>LIVE</div>
+        <div class="live-flag">🇬🇧</div>
+        <div class="live-viewers">👁 8.4k watching</div>
+        <div class="live-info"><div class="live-channel">BBC One</div><div class="live-desc">UK — Premier League Live</div><div class="live-lang">🔤 ENG · No sub needed</div></div>
+      </div>
+      <div class="live-card" onclick="openLiveModal('🎭','JTBC','Korea — Drama Special','🇰🇷','Korean','3.7k')">
+        <div class="live-bg" style="background:linear-gradient(135deg,#2a1a1a,#1a0d0d);">🎭</div>
+        <div class="live-overlay"></div>
+        <div class="live-badge"><div class="live-badge-dot"></div>LIVE</div>
+        <div class="live-flag">🇰🇷</div>
+        <div class="live-viewers">👁 3.7k watching</div>
+        <div class="live-info"><div class="live-channel">JTBC</div><div class="live-desc">Korea — Drama Special</div><div class="live-lang">🔤 KOR · SUB Available</div></div>
+      </div>
+      <div class="live-card" onclick="openLiveModal('🗼','France 24','France — Evening News','🇫🇷','French','2.1k')">
+        <div class="live-bg" style="background:linear-gradient(135deg,#1a1a2a,#2a1a2a);">🗼</div>
+        <div class="live-overlay"></div>
+        <div class="live-badge"><div class="live-badge-dot"></div>LIVE</div>
+        <div class="live-flag">🇫🇷</div>
+        <div class="live-viewers">👁 2.1k watching</div>
+        <div class="live-info"><div class="live-channel">France 24</div><div class="live-desc">France — Evening News</div><div class="live-lang">🔤 FRE · DUB Available</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ON YOUR PLATFORMS -->
+  <div class="section">
+    <div class="section-header"><div class="section-title">On Your Platforms</div><div class="see-all">See all</div></div>
+    <div class="h-scroll">
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a3a5c,#0d1b2a)">🏢</div><div class="plat-badge" style="color:#1CE783">HULU</div><div class="lang-badge">SUB</div></div><div class="card-title">Severance</div><div class="card-meta">Drama · Apple TV+</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#3a1a2a,#1a0d1a)">👑</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">DUB</div></div><div class="card-title">The Crown</div><div class="card-meta">Drama · Netflix</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a3a1a,#0d1a0d)">🐻</div><div class="plat-badge" style="color:#1CE783">HULU</div></div><div class="card-title">The Bear</div><div class="card-meta">Comedy · Hulu</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#2a1a3a,#1a0d2a)">🎭</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">DUB</div></div><div class="card-title">Squid Game</div><div class="card-meta">Thriller · Netflix</div></div>
+    </div>
+  </div>
+
+  <!-- TRENDING -->
+  <div class="section">
+    <div class="section-header"><div class="section-title">Trending Around the World</div><div class="see-all" onclick="goTo('discover')">See all</div></div>
+    <div class="h-scroll">
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#3a2a1a,#1a1a0d)">🗾</div><div class="flag-badge">🇯🇵</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">SUB</div></div><div class="card-title">Shogun</div><div class="card-meta">🇯🇵 Netflix JP</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a2a3a,#0d1523)">🕵️</div><div class="flag-badge">🇬🇧</div><div class="plat-badge">BBC</div></div><div class="card-title">Luther</div><div class="card-meta">🇬🇧 Netflix UK</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#2a1a1a,#1a0d0d)">🎬</div><div class="flag-badge">🇰🇷</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">DUB</div></div><div class="card-title">My Mister</div><div class="card-meta">🇰🇷 Netflix KR</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a1a3a,#0d0d2a)">🗼</div><div class="flag-badge">🇫🇷</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">DUB</div></div><div class="card-title">Lupin</div><div class="card-meta">🇫🇷 Netflix FR</div></div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ════ SEARCH ════ -->
+<div class="screen" id="search-screen" style="background:var(--navy);padding-top:60px;">
+  <div style="padding:24px 24px 0;">
+    <div style="background:var(--navy-light);border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;border:1.5px solid var(--purple);box-shadow:0 0 16px var(--purple-glow);margin-bottom:8px;">
+      <span style="font-size:16px;">🔍</span>
+      <div style="flex:1;font-size:14px;color:var(--white);">The Office<span style="display:inline-block;width:2px;height:14px;background:var(--purple);animation:blink 1s step-end infinite;margin-left:2px;vertical-align:middle;"></span></div>
+      <span style="font-size:14px;color:var(--gray-dark);cursor:pointer;" onclick="goTo('home')">✕</span>
+    </div>
+  </div>
+  <div style="padding:16px 24px 8px;font-size:12px;color:var(--gray-dark);">12 results found</div>
+
+  <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onclick="goTo('detail')">
+    <div style="width:48px;height:68px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(135deg,#1a3a5c,#0d1b2a);">🏢</div>
+    <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px;">The Office</div><div style="font-size:11px;color:var(--gray-dark);">2005 · Comedy · 9 Seasons</div><div style="display:flex;gap:4px;margin-top:4px;"><span style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:4px;padding:2px 5px;font-size:8px;color:var(--lavender);">SUB EN</span><span style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:4px;padding:2px 5px;font-size:8px;color:var(--lavender);">SUB ES</span><span style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:4px;padding:2px 5px;font-size:8px;color:var(--lavender);">DUB DE</span></div></div>
+    <div style="text-align:right;flex-shrink:0;"><div style="font-size:11px;color:var(--purple);font-weight:600;">Peacock</div><div style="font-size:10px;color:var(--gray-dark);">🇺🇸 United States</div></div>
+    <span style="font-size:12px;color:var(--gray-dark);margin-left:8px;">›</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onclick="goTo('detail')">
+    <div style="width:48px;height:68px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(135deg,#1a3a5c,#0d1b2a);">🏢</div>
+    <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px;">The Office</div><div style="font-size:11px;color:var(--gray-dark);">2005 · Comedy · 9 Seasons</div><div style="display:flex;gap:4px;margin-top:4px;"><span style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:4px;padding:2px 5px;font-size:8px;color:var(--lavender);">SUB EN</span><span style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:4px;padding:2px 5px;font-size:8px;color:var(--lavender);">DUB FR</span></div></div>
+    <div style="text-align:right;flex-shrink:0;"><div style="font-size:11px;color:var(--purple);font-weight:600;">Netflix</div><div style="font-size:10px;color:var(--gray-dark);">🇬🇧 United Kingdom</div></div>
+    <span style="font-size:12px;color:var(--gray-dark);margin-left:8px;">›</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onclick="goTo('detail')">
+    <div style="width:48px;height:68px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(135deg,#2a2a1a,#1a1a0d);">📺</div>
+    <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px;">The Office (UK)</div><div style="font-size:11px;color:var(--gray-dark);">2001 · Comedy · 2 Seasons</div><div style="display:flex;gap:4px;margin-top:4px;"><span style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:4px;padding:2px 5px;font-size:8px;color:var(--lavender);">SUB EN</span></div></div>
+    <div style="text-align:right;flex-shrink:0;"><div style="font-size:11px;color:var(--purple);font-weight:600;">BritBox</div><div style="font-size:10px;color:var(--gray-dark);">🇬🇧 United Kingdom</div></div>
+    <span style="font-size:12px;color:var(--gray-dark);margin-left:8px;">›</span>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ════ DETAIL ════ -->
+<div class="screen" id="detail" style="background:var(--navy);">
+  <div style="height:300px;position:relative;overflow:hidden;">
+    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:80px;background:linear-gradient(135deg,#1a3a5c,#0d1b2a,#1a2a3a);">🏢</div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:180px;background:linear-gradient(transparent,var(--navy));"></div>
+    <div onclick="goTo('home')" style="position:absolute;top:54px;left:20px;width:36px;height:36px;background:rgba(13,27,42,0.75);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;backdrop-filter:blur(8px);z-index:10;">←</div>
+    <div style="position:absolute;top:54px;right:20px;width:36px;height:36px;background:rgba(13,27,42,0.75);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;backdrop-filter:blur(8px);z-index:10;">🔖</div>
+  </div>
+  <div style="padding:0 24px;">
+    <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--white);margin-bottom:8px;line-height:1.2;">The Office</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--gray);background:var(--navy-light);padding:4px 10px;border-radius:20px;">2005</span>
+      <span style="font-size:11px;color:var(--gray);background:var(--navy-light);padding:4px 10px;border-radius:20px;">Comedy</span>
+      <span style="font-size:11px;color:var(--gray);background:var(--navy-light);padding:4px 10px;border-radius:20px;">9 Seasons</span>
+      <span style="font-size:13px;color:var(--lavender);font-weight:500;">⭐ 8.9</span>
+    </div>
+    <p style="font-size:13px;color:var(--gray);line-height:1.7;margin-bottom:4px;">A mockumentary on a group of typical office workers, where the workday consists of ego clashes, inappropriate behavior, and tedium.</p>
+    <span style="font-size:12px;color:var(--purple);cursor:pointer;margin-bottom:20px;display:inline-block;">Read More</span>
+
+    <!-- AUDIO & SUBTITLES -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:16px;font-weight:600;color:var(--white);margin-bottom:12px;">🌐 Audio &amp; Subtitles</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <div class="lang-tab active" id="tab-sub" onclick="switchTab('sub')">Subtitles</div>
+        <div class="lang-tab" id="tab-dub" onclick="switchTab('dub')">Dubbed</div>
+        <div class="lang-tab" id="tab-orig" onclick="switchTab('orig')">Original</div>
+      </div>
+      <div id="opts-sub">
+        <div class="lang-option selected" onclick="pickLang(this)"><span style="font-size:18px;">🇺🇸</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">English</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">SUB</span><span style="color:var(--purple);font-size:14px;">✓</span></div>
+        <div class="lang-option" onclick="pickLang(this)"><span style="font-size:18px;">🇪🇸</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">Spanish</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">SUB</span><span style="color:var(--purple);font-size:14px;opacity:0;">✓</span></div>
+        <div class="lang-option" onclick="pickLang(this)"><span style="font-size:18px;">🇫🇷</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">French</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">SUB</span><span style="color:var(--purple);font-size:14px;opacity:0;">✓</span></div>
+      </div>
+      <div id="opts-dub" style="display:none;">
+        <div class="lang-option selected" onclick="pickLang(this)"><span style="font-size:18px;">🇩🇪</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">German</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">DUB</span><span style="color:var(--purple);font-size:14px;">✓</span></div>
+        <div class="lang-option" onclick="pickLang(this)"><span style="font-size:18px;">🇫🇷</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">French</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">DUB</span><span style="color:var(--purple);font-size:14px;opacity:0;">✓</span></div>
+        <div class="lang-option" onclick="pickLang(this)"><span style="font-size:18px;">🇵🇹</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">Portuguese</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">DUB</span><span style="color:var(--purple);font-size:14px;opacity:0;">✓</span></div>
+      </div>
+      <div id="opts-orig" style="display:none;">
+        <div class="lang-option selected" onclick="pickLang(this)"><span style="font-size:18px;">🇺🇸</span><span style="flex:1;font-size:13px;font-weight:500;color:var(--white);">English (Original)</span><span style="font-size:10px;color:var(--gray-dark);background:var(--navy);border-radius:4px;padding:2px 6px;">ORIG</span><span style="color:var(--purple);font-size:14px;">✓</span></div>
+      </div>
+    </div>
+
+    <!-- AVAILABLE ON -->
+    <div style="margin-bottom:28px;">
+      <div style="font-size:16px;font-weight:600;color:var(--white);margin-bottom:14px;">Available On</div>
+      <div style="background:var(--navy-light);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#E50914;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0;">N</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Netflix</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">🇬🇧 United Kingdom</div></div>
+        <button onclick="goTo('home')" style="background:linear-gradient(135deg,var(--purple),var(--purple-dark));border:none;border-radius:10px;padding:8px 16px;color:white;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(124,77,255,0.4);">Watch Now</button>
+      </div>
+      <div style="background:var(--navy-light);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#0060a0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0;">P</div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Peacock</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">🇺🇸 United States</div></div>
+        <button onclick="goTo('home')" style="background:linear-gradient(135deg,var(--purple),var(--purple-dark));border:none;border-radius:10px;padding:8px 16px;color:white;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(124,77,255,0.4);">Watch Now</button>
+      </div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ════ DISCOVER ════ -->
+<div class="screen" id="discover" style="background:var(--navy);padding-top:60px;">
+  <div style="padding:24px 24px 16px;">
+    <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--white);">Discover</div>
+    <div style="font-size:13px;color:var(--gray);margin-top:4px;">Explore what the world is watching</div>
+  </div>
+  <div style="padding:0 24px 20px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;">
+    <div class="chip active" onclick="pickChip(this)">All</div>
+    <div class="chip" onclick="pickChip(this)" style="flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:var(--navy-light);color:var(--gray);border:1px solid transparent;">🇬🇧 UK</div>
+    <div class="chip" onclick="pickChip(this)" style="flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:var(--navy-light);color:var(--gray);border:1px solid transparent;">🇯🇵 Japan</div>
+    <div class="chip" onclick="pickChip(this)" style="flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:var(--navy-light);color:var(--gray);border:1px solid transparent;">🇰🇷 Korea</div>
+    <div class="chip" onclick="pickChip(this)" style="flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:var(--navy-light);color:var(--gray);border:1px solid transparent;">🇫🇷 France</div>
+  </div>
+  <div style="margin:0 24px 28px;border-radius:20px;overflow:hidden;height:180px;position:relative;cursor:pointer;" onclick="goTo('detail')">
+    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:60px;background:linear-gradient(135deg,#1a1a3a,#2a1a3a);">🗾</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(13,27,42,0.6),rgba(124,77,255,0.3));"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;"><div style="font-size:11px;color:var(--lavender);margin-bottom:4px;">🇯🇵 Trending in Japan</div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:white;">Shogun</div></div>
+    <div style="position:absolute;top:12px;right:12px;background:rgba(13,27,42,0.8);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;color:white;">Netflix JP</div>
+  </div>
+  <div class="section">
+    <div class="section-header"><div class="section-title">🇬🇧 Trending in UK</div><div class="see-all">See All</div></div>
+    <div class="h-scroll">
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a2a3a,#0d1523)">🕵️</div><div class="plat-badge">BBC</div></div><div class="card-title">Luther</div><div class="card-meta">Netflix UK</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#2a1a3a,#1a0d2a)">🏰</div><div class="plat-badge">ITVX</div></div><div class="card-title">Downton Abbey</div><div class="card-meta">BritBox UK</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a3a2a,#0d2a1a)">🌹</div><div class="plat-badge">BBC</div><div class="lang-badge">SUB</div></div><div class="card-title">Fleabag</div><div class="card-meta">Prime UK</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header"><div class="section-title">🇰🇷 Trending in Korea</div><div class="see-all">See All</div></div>
+    <div class="h-scroll">
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#2a1a2a,#1a0d1a)">🎭</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">DUB</div></div><div class="card-title">Squid Game</div><div class="card-meta">Netflix KR</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#1a2a1a,#0d1a0d)">💼</div><div class="plat-badge" style="color:#E50914">NFLX</div><div class="lang-badge">SUB</div></div><div class="card-title">My Mister</div><div class="card-meta">Netflix KR</div></div>
+      <div class="content-card" onclick="goTo('detail')"><div class="card-poster"><div class="poster-ph" style="background:linear-gradient(135deg,#3a2a1a,#1a1a0d)">🌸</div><div class="plat-badge">TVING</div></div><div class="card-title">Our Blues</div><div class="card-meta">Netflix KR</div></div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ════ PASSPORT ════ -->
+<div class="screen" id="passport" style="background:var(--navy);padding-top:60px;">
+  <div style="padding:24px 24px 16px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:24px;">📗</span>
+    <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--white);">My Passport</div>
+  </div>
+  <div class="passport-card">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--purple),#B39DDB);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px var(--purple-glow);flex-shrink:0;">✈️</div>
+      <div><div style="font-size:16px;font-weight:700;color:var(--white);">Alex Traveler</div><div style="font-size:12px;color:var(--gray-dark);margin-top:2px;">@streampass · Member since 2024</div></div>
+    </div>
+    <div style="display:flex;gap:24px;padding:16px 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:16px;">
+      <div style="text-align:center;"><div class="stat-num">8</div><div style="font-size:10px;color:var(--gray-dark);margin-top:2px;">Countries</div></div>
+      <div style="text-align:center;"><div class="stat-num">23</div><div style="font-size:10px;color:var(--gray-dark);margin-top:2px;">Shows</div></div>
+      <div style="text-align:center;"><div class="stat-num">142</div><div style="font-size:10px;color:var(--gray-dark);margin-top:2px;">Hours</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">🇬🇧 🇯🇵 🇰🇷 🇫🇷 🇩🇪 🇦🇺 🇨🇦 🇪🇸</div>
+  </div>
+  <div style="padding:0 24px 24px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="font-size:13px;color:var(--white);font-weight:500;">8 of 50 countries explored</span><span style="font-size:13px;color:var(--purple);font-weight:600;">16%</span></div>
+    <div style="height:8px;background:var(--navy-light);border-radius:4px;overflow:hidden;"><div style="width:16%;height:100%;background:linear-gradient(90deg,var(--purple),#B39DDB);border-radius:4px;box-shadow:0 0 12px var(--purple-glow);"></div></div>
+  </div>
+  <div style="padding:0 24px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div style="font-size:16px;font-weight:600;color:var(--white);">Badges Earned</div><div class="see-all">See All</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div class="badge-card earned"><div style="font-size:28px;">🇬🇧</div><div style="font-size:10px;color:var(--gray);text-align:center;">United Kingdom</div><div style="font-size:12px;">✅</div></div>
+      <div class="badge-card earned"><div style="font-size:28px;">🇯🇵</div><div style="font-size:10px;color:var(--gray);text-align:center;">Japan</div><div style="font-size:12px;">✅</div></div>
+      <div class="badge-card earned"><div style="font-size:28px;">🇰🇷</div><div style="font-size:10px;color:var(--gray);text-align:center;">South Korea</div><div style="font-size:12px;">✅</div></div>
+      <div class="badge-card earned"><div style="font-size:28px;">🇫🇷</div><div style="font-size:10px;color:var(--gray);text-align:center;">France</div><div style="font-size:12px;">✅</div></div>
+      <div class="badge-card locked"><div style="font-size:28px;">🇮🇹</div><div style="font-size:10px;color:var(--gray);text-align:center;">Italy</div><div style="font-size:12px;">🔒</div></div>
+      <div class="badge-card locked"><div style="font-size:28px;">🇧🇷</div><div style="font-size:10px;color:var(--gray);text-align:center;">Brazil</div><div style="font-size:12px;">🔒</div></div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ════ SETTINGS ════ -->
+<div class="screen" id="settings" style="background:var(--navy);padding-top:60px;">
+  <div style="padding:24px 24px 20px;"><div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--white);">Settings</div></div>
+
+  <div style="margin:0 24px 24px;background:var(--navy-light);border-radius:20px;padding:16px;display:flex;align-items:center;gap:14px;">
+    <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--purple),#B39DDB);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">✈️</div>
+    <div style="flex:1;"><div style="font-size:15px;font-weight:600;color:var(--white);">Alex Traveler</div><div style="font-size:12px;color:var(--gray-dark);margin-top:2px;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b2d3ded7caf2d7dfd3dbde9cd1dddf">[email&#160;protected]</a></div></div>
+    <div style="font-size:12px;color:var(--purple);cursor:pointer;">Edit</div>
+  </div>
+
+  <!-- VPN ACCESS -->
+  <div class="settings-section">
+    <div class="settings-section-title">VPN Access</div>
+    <div id="vpn-status-bar" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(124,77,255,0.15),rgba(92,53,204,0.1));border:1px solid rgba(124,77,255,0.3);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:22px;">🛡️</span>
+      <div style="flex:1;"><div id="vpn-status-title" style="font-size:14px;font-weight:600;color:var(--white);">Travel Pass — Not Connected</div><div id="vpn-status-sub" style="font-size:11px;color:var(--lavender);margin-top:2px;">Connect to access international content</div></div>
+      <div id="vpn-dot" class="vpn-status-dot off"></div>
+    </div>
+
+    <div class="vpn-card selected" id="vpn-connect-card" onclick="selectVPN('connect')">
+      <div class="vpn-card-header"><span style="font-size:20px;">🔗</span><span style="font-size:14px;font-weight:600;color:var(--white);flex:1;">Connect Your VPN</span><span class="vpn-badge free">Free</span></div>
+      <div class="vpn-desc">Already have a VPN? Connect it to StreamPass — no extra cost.</div>
+      <div class="vpn-providers">
+        <div class="vpn-pill active" onclick="pickProvider(event,this)"><div class="vpn-dot" style="background:#FF4444;"></div>ExpressVPN</div>
+        <div class="vpn-pill" onclick="pickProvider(event,this)"><div class="vpn-dot" style="background:#4687FF;"></div>NordVPN</div>
+        <div class="vpn-pill" onclick="pickProvider(event,this)"><div class="vpn-dot" style="background:#00C6F7;"></div>Surfshark</div>
+        <div class="vpn-pill" onclick="pickProvider(event,this)"><div class="vpn-dot" style="background:#8BC34A;"></div>Other</div>
+      </div>
+      <div style="margin-top:12px;"><button class="btn-primary" style="padding:12px;font-size:13px;" onclick="openModal('modal-connect')">Connect Now</button></div>
+    </div>
+
+    <div class="vpn-card" id="vpn-buy-card" onclick="selectVPN('buy')">
+      <div class="vpn-card-header"><span style="font-size:20px;">✈️</span><span style="font-size:14px;font-weight:600;color:var(--white);flex:1;">StreamPass Travel Pass</span><span class="vpn-badge rec">Recommended</span></div>
+      <div class="vpn-desc">No VPN? Get our built-in Travel Pass — optimized for streaming, one tap to connect.</div>
+      <div class="vpn-features">
+        <div class="vpn-feat">⚡ 1-tap connect</div>
+        <div class="vpn-feat">🌍 50+ countries</div>
+        <div class="vpn-feat">📺 Streaming optimized</div>
+        <div class="vpn-feat">🔒 No logs</div>
+      </div>
+      <div style="margin-top:12px;"><button class="btn-primary" style="padding:12px;font-size:13px;background:linear-gradient(135deg,#00E5A0,#00B880);box-shadow:0 8px 24px rgba(0,229,160,0.3);" onclick="openModal('modal-plans')">View Plans</button></div>
+    </div>
+  </div>
+
+  <!-- SUBSCRIPTIONS -->
+  <div class="settings-section">
+    <div class="settings-section-title">My Subscriptions</div>
+    <div class="settings-card">
+      <div class="settings-row"><div class="row-icon">🔴</div><div class="row-info"><div class="row-label">Netflix</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="row-icon">🟢</div><div class="row-info"><div class="row-label">Hulu</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="row-icon">⬛</div><div class="row-info"><div class="row-label">Apple TV+</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="row-icon">🔵</div><div class="row-info"><div class="row-label">Prime Video</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="row-icon" style="color:var(--purple);font-size:20px;">+</div><div class="row-info"><div class="row-label" style="color:var(--purple);">Add Platform</div></div></div>
+    </div>
+  </div>
+
+  <!-- LANGUAGE PREFS -->
+  <div class="settings-section">
+    <div class="settings-section-title">Language Preferences</div>
+    <div class="settings-card">
+      <div class="settings-row"><div class="row-icon">🔤</div><div class="row-info"><div class="row-label">Preferred Audio</div><div class="row-sub">Original language when available</div></div><div class="chevron">›</div></div>
+      <div class="settings-row"><div class="row-icon">💬</div><div class="row-info"><div class="row-label">Subtitle Language</div><div class="row-sub">English</div></div><div class="chevron">›</div></div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+        <div style="display:flex;align-items:center;gap:14px;width:100%;"><div class="row-icon">🎙️</div><div class="row-info"><div class="row-label">Preferred Dub Languages</div></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 4px 4px;">
+          <div class="lang-pref-chip active" onclick="this.classList.toggle('active')">🇺🇸 English</div>
+          <div class="lang-pref-chip active" onclick="this.classList.toggle('active')">🇪🇸 Spanish</div>
+          <div class="lang-pref-chip" onclick="this.classList.toggle('active')">🇫🇷 French</div>
+          <div class="lang-pref-chip" onclick="this.classList.toggle('active')">🇩🇪 German</div>
+          <div class="lang-pref-chip" onclick="this.classList.toggle('active')">🇯🇵 Japanese</div>
+          <div class="lang-pref-chip" onclick="this.classList.toggle('active')">🇰🇷 Korean</div>
+        </div>
+      </div>
+      <div class="settings-row"><div class="row-icon">🔔</div><div class="row-info"><div class="row-label">Notify when dub available</div><div class="row-sub">Alert when your language is added</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+  </div>
+
+  <!-- REGION -->
+  <div class="settings-section">
+    <div class="settings-section-title">Region Preferences</div>
+    <div class="settings-card">
+      <div class="settings-row"><div class="row-icon">🌐</div><div class="row-info"><div class="row-label">Home Region</div><div class="row-sub">United States</div></div><div class="chevron">›</div></div>
+      <div class="settings-row"><div class="row-icon">🗺️</div><div class="row-info"><div class="row-label">Show Content From</div><div class="row-sub">All Regions</div></div><div class="chevron">›</div></div>
+    </div>
+  </div>
+
+  <!-- RESPONSIBLE USE -->
+  <div class="settings-section">
+    <div class="settings-section-title">Responsible Use</div>
+    <div class="settings-card">
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div style="display:flex;align-items:center;gap:14px;width:100%;"><div class="row-icon">⚖️</div><div class="row-info"><div class="row-label">Our Commitment</div></div></div>
+        <div style="font-size:12px;color:var(--gray);line-height:1.7;padding:0 4px 4px;">StreamPass is a <span style="color:var(--lavender);font-weight:600;">content discovery and travel tool</span>. We help you find and access content you are legally entitled to as a traveler or expat. Users are responsible for complying with their streaming platform's Terms of Service.</div>
+      </div>
+      <div class="settings-row"><div class="row-icon">📋</div><div class="row-info"><div class="row-label">Platform Terms of Service</div><div class="row-sub">Understand your platform's policies</div></div><div class="chevron">›</div></div>
+      <div class="settings-row"><div class="row-icon">🌍</div><div class="row-info"><div class="row-label">VPN Legality by Country</div><div class="row-sub">Know the rules where you travel</div></div><div class="chevron">›</div></div>
+      <div class="settings-row"><div class="row-icon">✉️</div><div class="row-info"><div class="row-label">Report a Concern</div><div class="row-sub">Help us stay compliant</div></div><div class="chevron">›</div></div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="settings-section">
+    <div class="settings-section-title">Notifications</div>
+    <div class="settings-card">
+      <div class="settings-row"><div class="row-icon">🔔</div><div class="row-info"><div class="row-label">New content in my regions</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="row-icon">📅</div><div class="row-info"><div class="row-label">Arriving in my country soon</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="settings-row"><div class="row-icon">📰</div><div class="row-info"><div class="row-label">Weekly international picks</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="settings-section">
+    <div class="settings-section-title">About</div>
+    <div class="settings-card">
+      <div class="settings-row"><div class="row-icon">🔒</div><div class="row-info"><div class="row-label">Privacy Policy</div></div><div class="chevron">›</div></div>
+      <div class="settings-row"><div class="row-icon">📄</div><div class="row-info"><div class="row-label">Terms of Service</div></div><div class="chevron">›</div></div>
+      <div class="settings-row"><div class="row-icon">⭐</div><div class="row-info"><div class="row-label">Rate StreamPass</div></div><div class="chevron">›</div></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;font-size:10px;color:var(--gray-dark);margin:0 24px 16px;line-height:1.5;">This product uses the TMDB API but is not endorsed or certified by TMDB · v1.0.0</div>
+  <button class="btn-outline" style="margin:0 24px;width:calc(100% - 48px);border-color:var(--purple);color:var(--purple);">Sign Out</button>
+  <div class="spacer"></div>
+</div>
+
+<!-- ════ MODAL: LIVE ════ -->
+<div class="modal-overlay" id="modal-live">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="background:var(--live-red);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:white;display:flex;align-items:center;gap:4px;"><div class="live-badge-dot"></div>LIVE NOW</div>
+      <span id="live-flag" style="font-size:22px;">🇯🇵</span>
+    </div>
+    <div class="modal-title" id="live-channel">NHK World</div>
+    <div class="modal-sub" id="live-desc">Japan — News &amp; Culture</div>
+    <div style="background:var(--navy);border-radius:16px;padding:16px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="font-size:12px;color:var(--gray);">Language</span><span id="live-lang" style="font-size:12px;color:var(--white);font-weight:600;">Japanese</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="font-size:12px;color:var(--gray);">Watching now</span><span id="live-viewers" style="font-size:12px;color:var(--live-red);font-weight:600;">1.2k viewers</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--gray);">Subtitles</span><span style="font-size:12px;color:var(--success);font-weight:600;">Available in EN, ES, FR</span></div>
+    </div>
+    <button class="btn-primary" style="margin-bottom:12px;" onclick="closeModal('modal-live')">▶ Watch Live</button>
+    <button class="btn-outline" onclick="closeModal('modal-live')">Not Now</button>
+  </div>
+</div>
+
+<!-- ════ MODAL: CONNECT VPN ════ -->
+<div class="modal-overlay" id="modal-connect">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="font-size:28px;margin-bottom:12px;">🔗</div>
+    <div class="modal-title">Connect Your VPN</div>
+    <div class="modal-sub">Select your provider and we'll link it automatically</div>
+    <div style="margin-bottom:20px;">
+      <div class="plan-card selected" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">ExpressVPN</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Fastest speeds for streaming</div></div><div style="text-align:right;"><div class="plan-price" style="color:var(--success);">✓ Linked</div></div></div>
+      <div class="plan-card" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">NordVPN</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Large server network</div></div><div style="text-align:right;"><div class="plan-price" style="color:var(--gray-dark);">Connect</div></div></div>
+      <div class="plan-card" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Surfshark</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Unlimited devices</div></div><div style="text-align:right;"><div class="plan-price" style="color:var(--gray-dark);">Connect</div></div></div>
+      <div class="plan-card" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Other VPN</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Enter credentials manually</div></div><div style="text-align:right;"><div class="plan-price" style="color:var(--gray-dark);">Manual</div></div></div>
+    </div>
+    <button class="btn-primary" style="margin-bottom:12px;" onclick="activateVPN()">Link VPN</button>
+    <button class="btn-outline" onclick="closeModal('modal-connect')">Cancel</button>
+  </div>
+</div>
+
+<!-- ════ MODAL: TRAVEL PASS PLANS ════ -->
+<div class="modal-overlay" id="modal-plans">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="font-size:28px;margin-bottom:12px;">✈️</div>
+    <div class="modal-title">StreamPass Travel Pass</div>
+    <div class="modal-sub">Built-in streaming VPN — no setup needed</div>
+    <div style="margin-bottom:8px;">
+      <div class="plan-card" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Day Pass</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Try it out</div></div><div style="text-align:right;"><div class="plan-price">$0.99</div><div class="plan-period">/ day</div></div></div>
+      <div class="plan-card" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Monthly</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Cancel anytime</div></div><div style="text-align:right;"><div class="plan-price">$4.99</div><div class="plan-period">/ month</div></div></div>
+      <div class="plan-card selected" onclick="pickPlan(this)"><div class="plan-radio"></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Annual</div><div style="font-size:11px;color:var(--gray-dark);margin-top:2px;">Best value — save 40%</div></div><div style="text-align:right;"><div class="plan-price">$2.99</div><div class="plan-period">/ month</div></div></div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--gray-dark);margin-bottom:16px;">50+ countries · No logs · Cancel anytime</div>
+    <button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00E5A0,#00B880);box-shadow:0 8px 24px rgba(0,229,160,0.3);" onclick="activateVPN()">Get Travel Pass</button>
+    <button class="btn-outline" onclick="closeModal('modal-plans')">Maybe Later</button>
+  </div>
+</div>
+
+<!-- ════ GLOBAL NAV ════ -->
+<nav class="global-nav" id="global-nav">
+  <div class="nav-item" id="nav-home" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+  <div class="nav-item" id="nav-discover" onclick="goTo('discover')"><div class="nav-icon">🌍</div><div class="nav-label">Discover</div></div>
+  <div class="nav-item" id="nav-passport" onclick="goTo('passport')"><div class="nav-icon">📗</div><div class="nav-label">Passport</div></div>
+  <div class="nav-item" id="nav-settings" onclick="goTo('settings')"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+</nav>
+
+</div><!-- /phone -->
+
+<!-- ════ ALL JS AT BOTTOM — NO REFERENCE ERRORS ════ -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── Navigation ──
+var NAV_SCREENS = ['home','search-screen','detail','discover','passport','settings'];
+var NAV_MAP = {home:'nav-home','search-screen':'nav-home',detail:'nav-home',discover:'nav-discover',passport:'nav-passport',settings:'nav-settings'};
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if (el) { el.classList.add('active'); el.scrollTop = 0; }
+  var nav = document.getElementById('global-nav');
+  if (NAV_SCREENS.indexOf(id) > -1) { nav.classList.add('visible'); } else { nav.classList.remove('visible'); }
+  document.querySelectorAll('.global-nav .nav-item').forEach(function(i){ i.classList.remove('active'); });
+  if (NAV_MAP[id]) { var ni = document.getElementById(NAV_MAP[id]); if(ni) ni.classList.add('active'); }
+}
+
+// ── Onboarding ──
+var currentSlide = 1;
+var totalSlides = 4;
+
+function nextSlide() {
+  var cur = document.getElementById('ob' + currentSlide);
+  var dot = document.getElementById('dot' + currentSlide);
+  if (cur) cur.style.display = 'none';
+  if (dot) { dot.style.width = '8px'; dot.style.background = 'var(--gray-dark)'; dot.style.boxShadow = 'none'; }
+  currentSlide++;
+  if (currentSlide <= totalSlides) {
+    var next = document.getElementById('ob' + currentSlide);
+    var nextDot = document.getElementById('dot' + currentSlide);
+    if (next) { next.style.display = 'flex'; next.style.animation = 'fadeIn 0.4s ease'; }
+    if (nextDot) { nextDot.style.width = '24px'; nextDot.style.background = 'var(--purple)'; nextDot.style.boxShadow = '0 0 10px var(--purple-glow)'; }
+    var btn = document.getElementById('ob-btn');
+    if (btn) {
+      if (currentSlide === totalSlides) { btn.textContent = 'I Understand — Let\'s Go 🚀'; btn.onclick = function(){ goTo('setup'); }; }
+      else if (currentSlide > totalSlides) { goTo('setup'); }
+    }
+  } else { goTo('setup'); }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('ob-btn');
+  if (btn) btn.onclick = nextSlide;
+});
+
+// ── Platform tiles ──
+function togglePlatform(el) {
+  var isSel = el.classList.contains('sel');
+  if (isSel) {
+    el.classList.remove('sel');
+    el.style.background = 'var(--navy-light)';
+    el.style.borderColor = 'transparent';
+    el.style.boxShadow = 'none';
+  } else {
+    el.classList.add('sel');
+    el.style.background = 'rgba(124,77,255,0.1)';
+    el.style.borderColor = 'var(--purple)';
+    el.style.boxShadow = '0 0 20px var(--purple-glow)';
+  }
+}
+
+// ── Chip filters ──
+function pickChip(el) {
+  document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); c.style.background='var(--navy-light)'; c.style.color='var(--gray)'; c.style.borderColor='transparent'; c.style.boxShadow='none'; });
+  el.classList.add('active'); el.style.background='rgba(124,77,255,0.2)'; el.style.color='var(--purple)'; el.style.borderColor='var(--purple)'; el.style.boxShadow='0 0 12px var(--purple-glow)';
+}
+
+// ── Live modal ──
+function openLiveModal(emoji, channel, desc, flag, lang, viewers) {
+  document.getElementById('live-flag').textContent = flag;
+  document.getElementById('live-channel').textContent = channel;
+  document.getElementById('live-desc').textContent = desc;
+  document.getElementById('live-lang').textContent = lang;
+  document.getElementById('live-viewers').textContent = viewers + ' viewers';
+  document.getElementById('modal-live').classList.add('open');
+}
+
+// ── Modal helpers ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── VPN selection ──
+function selectVPN(type) {
+  var c = document.getElementById('vpn-connect-card');
+  var b = document.getElementById('vpn-buy-card');
+  if (type === 'connect') { c.classList.add('selected'); b.classList.remove('selected'); }
+  else { b.classList.add('selected'); c.classList.remove('selected'); }
+}
+
+function pickProvider(e, el) {
+  e.stopPropagation();
+  el.closest('.vpn-providers').querySelectorAll('.vpn-pill').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function pickPlan(el) {
+  el.closest('.modal-sheet').querySelectorAll('.plan-card').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+
+function activateVPN() {
+  document.querySelectorAll('.modal-overlay').forEach(function(m){ m.classList.remove('open'); });
+  var dot = document.getElementById('vpn-dot');
+  var title = document.getElementById('vpn-status-title');
+  var sub = document.getElementById('vpn-status-sub');
+  if (dot) { dot.classList.remove('off'); }
+  if (title) title.textContent = 'Travel Pass — Connected 🇬🇧';
+  if (sub) sub.textContent = 'Routing via United Kingdom';
+}
+
+// ── Language tabs ──
+function switchTab(type) {
+  ['sub','dub','orig'].forEach(function(t) {
+    var tab = document.getElementById('tab-' + t);
+    var opts = document.getElementById('opts-' + t);
+    if (tab) tab.classList.toggle('active', t === type);
+    if (opts) opts.style.display = t === type ? 'block' : 'none';
+  });
+}
+
+function pickLang(el) {
+  var parent = el.parentElement;
+  parent.querySelectorAll('.lang-option').forEach(function(o) {
+    o.classList.remove('selected');
+    var check = o.querySelectorAll('span');
+    if (check.length > 0
