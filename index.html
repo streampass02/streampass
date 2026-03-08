@@ -761,23 +761,17 @@ var totalSlides = 4;
 
 function showSlide(n) {
   for (var i = 1; i <= totalSlides; i++) {
-    var slide = document.getElementById('ob' + i);
-    var dot = document.getElementById('dot' + i);
-    if (slide) slide.style.display = (i === n) ? 'flex' : 'none';
-    if (dot) {
-      dot.style.width = (i === n) ? '24px' : '8px';
-      dot.style.background = (i === n) ? 'var(--purple)' : 'var(--gray-dark)';
-      dot.style.boxShadow = (i === n) ? '0 0 10px var(--purple-glow)' : 'none';
+    var s = document.getElementById('ob' + i);
+    var d = document.getElementById('dot' + i);
+    if (s) s.style.display = (i === n) ? 'flex' : 'none';
+    if (d) {
+      d.style.width = (i === n) ? '24px' : '8px';
+      d.style.background = (i === n) ? 'var(--purple)' : 'var(--gray-dark)';
+      d.style.boxShadow = (i === n) ? '0 0 10px var(--purple-glow)' : 'none';
     }
   }
   var btn = document.getElementById('ob-btn');
-  if (btn) {
-    if (n === totalSlides) {
-      btn.textContent = "I Understand — Let's Go 🚀";
-    } else {
-      btn.textContent = 'Next';
-    }
-  }
+  if (btn) btn.textContent = (n === totalSlides) ? "I Understand — Let's Go 🚀" : 'Next';
 }
 
 function nextSlide() {
@@ -789,8 +783,8 @@ function nextSlide() {
   }
 }
 
-// Init first slide on load
 showSlide(1);
+
 
 // ── Platform tiles ──
 function togglePlatform(el) {
